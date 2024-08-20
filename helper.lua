@@ -42,7 +42,17 @@ end
 
 local INF = 2147483647;
 
-GetSpellBookItemInfo = function(index, book) return C_SpellBook.GetSpellBookItemType(index, Enum.SpellBookSpellBank.Player) end
+local BOOKTYPE_SPELL = "spell";
+
+local GetSpellBookItemName = function(index, bookType)
+	local spellBank = (bookType == BOOKTYPE_SPELL) and Enum.SpellBookSpellBank.Player or Enum.SpellBookSpellBank.Pet;
+	return C_SpellBook.GetSpellBookItemName(index, spellBank);
+end
+
+GetSpellBookItemInfo = function(index, bookType)
+	local spellBank = (bookType == BOOKTYPE_SPELL) and Enum.SpellBookSpellBank.Player or Enum.SpellBookSpellBank.Pet;
+	return C_SpellBook.GetSpellBookItemType(index, spellBank);
+end
 
 function ConRO:SpecName()
 	local currentSpec = GetSpecialization();
