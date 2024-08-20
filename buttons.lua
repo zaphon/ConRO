@@ -23,141 +23,141 @@ ConRO.MovementFrames = {};
 ConRO.TauntFramePool = {};
 ConRO.TauntFrames = {};
 
+local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
+
+local GetSpellInfo = function(spellID)
+	if not spellID then
+		return nil;
+	end
+
+	local spellInfo = C_Spell.GetSpellInfo(spellID);
+	if spellInfo then
+		return spellInfo.name, nil, spellInfo.iconID, spellInfo.castTime, spellInfo.minRange, spellInfo.maxRange, spellInfo.spellID, spellInfo.originalIconID;
+	end
+end
+
+local GetSpellCooldown = function(spellID)
+	local spellCooldownInfo = C_Spell.GetSpellCooldown(spellID);
+	if spellCooldownInfo then
+		return spellCooldownInfo.startTime, spellCooldownInfo.duration, spellCooldownInfo.isEnabled, spellCooldownInfo.modRate;
+	end
+end
+
 local defaults = {
 	["ConRO_Settings_Full"] = true,
 	["ConRO_Settings_Burst"] = false,
-	["ConRO_Settings_Auto"] = false,
-	["ConRO_Settings_Single"] = true,
+	["ConRO_Settings_PvP"] = false,
+	["ConRO_Settings_Auto"] = true,
+	["ConRO_Settings_Single"] = false,
 	["ConRO_Settings_AoE"] = false,
 }
 
-if ConRO:MeleeSpec() then
-	defaults = {
-		["ConRO_Settings_Full"] = true,
-		["ConRO_Settings_Burst"] = false,
-		["ConRO_Settings_Auto"] = true,
-		["ConRO_Settings_Single"] = false,
-		["ConRO_Settings_AoE"] = false,
-	}
-end
-
 ConROCharacter = ConROCharacter or defaults;
 
-function TTOnEnter(self)
-	GameTooltip:SetOwner(self, "ANCHOR_PRESERVE")
-	GameTooltip:SetText("ConRO Target Toggle")  -- This sets the top line of text, in gold.
-	GameTooltip:AddLine('MACRO = "/ConROToggle"', 1, 1, 1, true)
-	GameTooltip:AddLine(" ", 1, 1, 1, true)
-	GameTooltip:AddLine("Auto", .2, 1, .2)
-		GameTooltip:AddLine("Used for melee specs to auto detect the number of enemies in range. Must have nameplates turned on.", 1, 1, 1, true)
-	GameTooltip:AddLine("Single", 1, .2, .2)
-		GameTooltip:AddLine("This will force single target rotation to focus and burn a target.", 1, 1, 1, true)
-	GameTooltip:AddLine("AoE", 1, .2, .2)
-		GameTooltip:AddLine("This will force AoE rotation for trash or Boss phases with frequent adds.", 1, 1, 1, true)
-	GameTooltip:AddLine(" ", 1, 1, 1, true)
-		GameTooltip:AddLine('"This can be toggled during combat as phases change."', 1, 1, 0, true)
+function ConROTTOnEnter(self)
+	local ttFrameName = self:GetName();
+	GameTooltip_SetDefaultAnchor(GameTooltip, UIParent)
+
+	if ttFrameName == "ConRO_LockButton" then
+		GameTooltip:SetText("ConRO Lock/Unlock")  -- This sets the top line of text, in gold.
+		GameTooltip:AddLine(" ", 1, 1, 1, true)
+			GameTooltip:AddLine("Click to lock/unlock ConRO frames.", 1, 1, 1, true)
+	end
+
+	if ttFrameName == "ConRO_AutoButton" or ttFrameName == "ConRO_SingleButton" or ttFrameName == "ConRO_AoEButton" or ttFrameName == "ConRO_BlockAoEButton" then
+		GameTooltip:SetText("ConRO Target Toggle")  -- This sets the top line of text, in gold.
+		GameTooltip:AddLine('MACRO = "/ConROToggle"', 1, 1, 1, true)
+		GameTooltip:AddLine(" ", 1, 1, 1, true)
+		GameTooltip:AddLine("Auto", .2, 1, .2)
+			GameTooltip:AddLine("Used for melee specs to auto detect the number of enemies in range. Must have nameplates turned on.", 1, 1, 1, true)
+		GameTooltip:AddLine(" ", 1, 1, 1, true)
+		GameTooltip:AddLine("Single", .2, 1, .2)
+			GameTooltip:AddLine("This will force single target rotation to focus and burn a target.", 1, 1, 1, true)
+		GameTooltip:AddLine(" ", 1, 1, 1, true)
+		GameTooltip:AddLine("AoE", .2, 1, .2)
+			GameTooltip:AddLine("This will force AoE rotation for trash or Boss phases with frequent adds.", 1, 1, 1, true)
+		GameTooltip:AddLine(" ", 1, 1, 1, true)
+			GameTooltip:AddLine('"This can be toggled during combat as phases change."', 1, 1, 0, true)
+	end
+
+	if ttFrameName == "ConRO_FullButton" or ttFrameName == "ConRO_BurstButton" or ttFrameName == "ConRO_PvPButton" or ttFrameName == "ConRO_BlockBurstButton" then
+		GameTooltip:SetText("ConRO Rotation Toggle")  -- This sets the top line of text, in gold.
+		GameTooltip:AddLine('/ConROBurstToggle', 1, 1, 1, true)
+		GameTooltip:AddLine('/ConROPvPToggle', 1, 1, 1, true)
+		GameTooltip:AddLine('Can be macroed.', 1, 1, 1, true)
+		GameTooltip:AddLine(" ", 1, 1, 1, true)
+		GameTooltip:AddLine("Full Rotation", .2, 1, .2)
+			GameTooltip:AddLine("Can be used for placing long cooldowns into the recommended rotation.", 1, 1, 1, true)
+		GameTooltip:AddLine(" ", 1, 1, 1, true)
+		GameTooltip:AddLine("Burst Rotation", .2, 1, .2)
+			GameTooltip:AddLine("This is for Boss fights where you want to decide when to use your cooldowns.", 1, 1, 1, true)
+		GameTooltip:AddLine(" ", 1, 1, 1, true)
+		GameTooltip:AddLine("PvP Rotation", .2, 1, .2)
+			GameTooltip:AddLine("This is for PvP fights where you want to decide when to use utility, lockdown and chase abilities.", 1, 1, 1, true)
+		GameTooltip:AddLine(" ", 1, 1, 1, true)
+			GameTooltip:AddLine('"This can be toggled during combat as phases change."', 1, 1, 0, true)
+	end
+
+	if ttFrameName == "ConROWindow" or ttFrameName == "ConROWindow2" then
+		GameTooltip:SetText("ConRO Window")  -- This sets the top line of text, in gold.
+		GameTooltip:AddLine("", .2, 1, .2)
+			GameTooltip:AddLine("This window displays up to the next three(3) suggested abilities in your rotation.", 1, 1, 1, true)
+	end
+
+	if ttFrameName == "ConRODefenseWindow" then
+		GameTooltip:SetText("ConRO Defense Window")  -- This sets the top line of text, in gold.
+		GameTooltip:AddLine("", .2, 1, .2)
+			GameTooltip:AddLine("This window displays the next suggested defense ability in your rotation.", 1, 1, 1, true)
+	end
+
+	if ttFrameName == "ConROInterruptWindow" then
+		GameTooltip:SetText("ConRO Interrupt Flash")  -- This sets the top line of text, in gold.
+		GameTooltip:AddLine("", .2, 1, .2)
+			GameTooltip:AddLine("This flash displays that you can interrupt.", 1, 1, 1, true)
+
+		local color = ConRO.db.profile._Interrupt_Overlay_Color;
+		ConROInterruptWindow:SetSize(ConRO.db.profile.flashIconSize * .75, ConRO.db.profile.flashIconSize * .75);
+		ConROInterruptWindow.texture:SetVertexColor(color.r, color.g, color.b);
+	end
+
+	if ttFrameName == "ConROPurgeWindow" then
+		GameTooltip:SetText("ConRO Purge Flash")  -- This sets the top line of text, in gold.
+		GameTooltip:AddLine("", .2, 1, .2)
+			GameTooltip:AddLine("This flash displays that you can purge.", 1, 1, 1, true)
+
+		local color = ConRO.db.profile._Purge_Overlay_Color;
+		ConROPurgeWindow:SetSize(ConRO.db.profile.flashIconSize * .75, ConRO.db.profile.flashIconSize * .75);
+		ConROPurgeWindow.texture:SetVertexColor(color.r, color.g, color.b);
+	end
+
+	if ttFrameName == "ConRO_AtonementButton" or ttFrameName == "ConRO_RaidAtonementButton" then
+		GameTooltip:SetText("ConRO Atonement")  -- This sets the top line of text, in gold.
+		GameTooltip:AddLine(" ", 1, 1, 1, true)
+		GameTooltip:AddLine("At", .2, 1, .2)
+			GameTooltip:AddLine("This is the number of Atonement buffs in your group.", 1, 1, 1, true)
+		GameTooltip:AddLine(" ", 1, 1, 1, true)
+		GameTooltip:AddLine("Solo, Party or Raid", .2, 1, .2)
+			GameTooltip:AddLine("Sets your Atonement threshold for raids. Solo is defaulted to 1 and Party is defaulted to 5.", 1, 1, 1, true)
+		GameTooltip:AddLine(" ", 1, 1, 1, true)
+			GameTooltip:AddLine('"This can be changed during combat as phases change."', 1, 1, 0, true)
+	end
+
 	GameTooltip:Show()
 end
 
-function TTOnLeave(self)
-	GameTooltip:Hide()
-end
+function ConROTTOnLeave(self)
+	local ttFrameName = self:GetName();
 
-function ETOnEnter(self)
-	GameTooltip:SetOwner(self, "ANCHOR_PRESERVE")
-	GameTooltip:SetText("ConRO Rotation Toggle")  -- This sets the top line of text, in gold.
-	GameTooltip:AddLine('MACRO = "/ConROBurstToggle"', 1, 1, 1, true)
-	GameTooltip:AddLine(" ", 1, 1, 1, true)
-	GameTooltip:AddLine("Burst Rotation", .2, 1, .2)
-		GameTooltip:AddLine("This is for Boss fights where you want to decide when to use your cooldowns.", 1, 1, 1, true)
-	GameTooltip:AddLine("Full Rotation", 1, .2, .2)
-		GameTooltip:AddLine("Can be used for placing long cooldowns into the recommended rotation.", 1, 1, 1, true)
-	GameTooltip:AddLine(" ", 1, 1, 1, true)
-		GameTooltip:AddLine('"This can be toggled during combat as phases change."', 1, 1, 0, true)
-	GameTooltip:Show()
-end
+	if ttFrameName == "ConROInterruptWindow" then
+		ConROInterruptWindow:SetSize(ConRO.db.profile.flashIconSize * .25, ConRO.db.profile.flashIconSize * .25);
+		ConROInterruptWindow.texture:SetVertexColor(.1, .1, .1);
+	end
 
-function ETOnLeave(self)
-	GameTooltip:Hide()
-end
+	if ttFrameName == "ConROPurgeWindow" then
+		ConROPurgeWindow:SetSize(ConRO.db.profile.flashIconSize * .25, ConRO.db.profile.flashIconSize * .25);
+		ConROPurgeWindow.texture:SetVertexColor(.1, .1, .1);
+	end
 
-function TWOnEnter(self)
-	GameTooltip:SetOwner(self, "ANCHOR_PRESERVE")
-	GameTooltip:SetText("ConRO Window")  -- This sets the top line of text, in gold.
-	GameTooltip:AddLine("", .2, 1, .2)
-		GameTooltip:AddLine("This window displays the next suggested ability in your rotation.", 1, 1, 1, true)
-	GameTooltip:Show()
-end
-
-function TWOnLeave(self)
-	GameTooltip:Hide()
-end
-
-function TDWOnEnter(self)
-	GameTooltip:SetOwner(self, "ANCHOR_PRESERVE")
-	GameTooltip:SetText("ConRO Defense Window")  -- This sets the top line of text, in gold.
-	GameTooltip:AddLine("", .2, 1, .2)
-		GameTooltip:AddLine("This window displays the next suggested defense ability in your rotation.", 1, 1, 1, true)
-	GameTooltip:Show()
-end
-
-function TDWOnLeave(self)
-	GameTooltip:Hide()
-end
-
-function TIWOnEnter(self)
-	GameTooltip:SetOwner(self, "ANCHOR_PRESERVE")
-	GameTooltip:SetText("ConRO Interrupt Flash")  -- This sets the top line of text, in gold.
-	GameTooltip:AddLine("", .2, 1, .2)
-		GameTooltip:AddLine("This flash displays that you can interrupt.", 1, 1, 1, true)
-	GameTooltip:Show()
-
-	local color = ConRO.db.profile._Interrupt_Overlay_Color;
-	ConROInterruptWindow:SetSize(ConRO.db.profile.flashIconSize * .75, ConRO.db.profile.flashIconSize * .75);
-	ConROInterruptWindow.texture:SetVertexColor(color.r, color.g, color.b);
-end
-
-function TIWOnLeave(self)
-	GameTooltip:Hide()
-
-	ConROInterruptWindow:SetSize(ConRO.db.profile.flashIconSize * .25, ConRO.db.profile.flashIconSize * .25);
-	ConROInterruptWindow.texture:SetVertexColor(.1, .1, .1);
-end
-
-function TPWOnEnter(self)
-	GameTooltip:SetOwner(self, "ANCHOR_PRESERVE")
-	GameTooltip:SetText("ConRO Purge Flash")  -- This sets the top line of text, in gold.
-	GameTooltip:AddLine("", .2, 1, .2)
-		GameTooltip:AddLine("This flash displays that you can purge.", 1, 1, 1, true)
-	GameTooltip:Show()
-
-	local color = ConRO.db.profile._Purge_Overlay_Color;
-	ConROPurgeWindow:SetSize(ConRO.db.profile.flashIconSize * .75, ConRO.db.profile.flashIconSize * .75);
-	ConROPurgeWindow.texture:SetVertexColor(color.r, color.g, color.b);
-end
-
-function TPWOnLeave(self)
-	GameTooltip:Hide()
-
-	ConROPurgeWindow:SetSize(ConRO.db.profile.flashIconSize * .25, ConRO.db.profile.flashIconSize * .25);
-	ConROPurgeWindow.texture:SetVertexColor(.1, .1, .1);
-end
-
-function AtoneOnEnter(self)
-	GameTooltip:SetOwner(self, "ANCHOR_PRESERVE")
-	GameTooltip:SetText("ConRO Atonement")  -- This sets the top line of text, in gold.
-	GameTooltip:AddLine(" ", 1, 1, 1, true)
-	GameTooltip:AddLine("At:", .2, 1, .2)
-		GameTooltip:AddLine("This is the number of Atonement buffs in your group.", 1, 1, 1, true)
-	GameTooltip:AddLine(" ", 1, 1, 1, true)
-	GameTooltip:AddLine("Raid:", 1, .2, .2)
-		GameTooltip:AddLine("Sets your Atonement threshold for raids. Solo is defaulted to 1 and Party is defaulted to 5.", 1, 1, 1, true)
-	GameTooltip:AddLine(" ", 1, 1, 1, true)
-		GameTooltip:AddLine('"This can be changed during combat as phases change."', 1, 1, 0, true)
-	GameTooltip:Show()
-end
-
-function AtoneOnLeave(self)
 	GameTooltip:Hide()
 end
 
@@ -219,7 +219,37 @@ function ConRO:DisplayToggleFrame()
 				end
 			end
 		end)
-		frame:Show()
+
+	local lockButton = CreateFrame("Button", 'ConRO_LockButton', frame);
+		lockButton:SetFrameStrata('MEDIUM');
+		lockButton:SetFrameLevel('74');
+		lockButton:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", -2, 5);
+		lockButton:SetSize(15, 15);
+		lockButton:SetAlpha(0.50);
+		lockButton:Hide()
+
+	local lockTexture = lockButton:CreateTexture(nil, "OVERLAY");
+		lockTexture:SetAllPoints();
+		lockButton.lockTexture = lockTexture;
+
+		lockButton:SetScript("OnEnter", function(self)
+			ConROTTOnEnter(self)
+			self:SetAlpha(1) -- Set alpha to max on hover
+		end)
+
+		lockButton:SetScript("OnLeave", function(self)
+			ConROTTOnLeave(self)
+			self:SetAlpha(0.50) -- Reset alpha to half on mouse out
+		end)
+
+		lockButton:SetScript("OnClick", function()
+			-- Toggle the unlockWindow status
+			ConRO:SlashUnlock()
+		end)
+
+		-- Initialize the lock texture based on initial unlockWindow status
+		ConRO:UpdateLockTexture();
+		frame:Show();
 end
 
 function ConRO:CreateAutoButton()
@@ -240,8 +270,8 @@ function ConRO:CreateAutoButton()
 		tbutton:SetText("Auto")
 		tbutton:SetNormalFontObject("GameFontHighlightSmall")
 
-		tbutton:SetScript("OnEnter", TTOnEnter)
-		tbutton:SetScript("OnLeave", TTOnLeave)
+		tbutton:SetScript("OnEnter", ConROTTOnEnter)
+		tbutton:SetScript("OnLeave", ConROTTOnLeave)
 
 		local ntex = tbutton:CreateTexture()
 			ntex:SetTexture("Interface\\AddOns\\ConRO\\images\\buttonUp")
@@ -299,8 +329,8 @@ function ConRO:CreateSingleButton()
 		tbutton:SetText("Single")
 		tbutton:SetNormalFontObject("GameFontHighlightSmall")
 
-		tbutton:SetScript("OnEnter", TTOnEnter)
-		tbutton:SetScript("OnLeave", TTOnLeave)
+		tbutton:SetScript("OnEnter", ConROTTOnEnter)
+		tbutton:SetScript("OnLeave", ConROTTOnLeave)
 
 	local ntex = tbutton:CreateTexture()
 		ntex:SetTexture("Interface\\AddOns\\ConRO\\images\\buttonUp")
@@ -358,8 +388,8 @@ function ConRO:CreateAoEButton()
 		tbutton:SetText("AoE")
 		tbutton:SetNormalFontObject("GameFontHighlightSmall")
 
-		tbutton:SetScript("OnEnter", TTOnEnter)
-		tbutton:SetScript("OnLeave", TTOnLeave)
+		tbutton:SetScript("OnEnter", ConROTTOnEnter)
+		tbutton:SetScript("OnLeave", ConROTTOnLeave)
 
 	local ntex = tbutton:CreateTexture()
 		ntex:SetTexture("Interface\\AddOns\\ConRO\\images\\buttonUp")
@@ -391,19 +421,12 @@ function ConRO:CreateAoEButton()
 			if ConRO.db.profile._Unlock_ConRO then
 				ConROButtonFrame:StopMovingOrSizing();
 			end
-			if ConRO:MeleeSpec() then
-				ConRO_AutoButton:Show();
-				self:Hide();
-				ConROCharacter.ConRO_Settings_Auto = true;
-				ConROCharacter.ConRO_Settings_Single = false;
-				ConROCharacter.ConRO_Settings_AoE = false;
-			else
-				ConRO_SingleButton:Show();
-				self:Hide();
-				ConROCharacter.ConRO_Settings_Auto = false;
-				ConROCharacter.ConRO_Settings_Single = true;
-				ConROCharacter.ConRO_Settings_AoE = false;
-			end
+
+			ConRO_AutoButton:Show();
+			self:Hide();
+			ConROCharacter.ConRO_Settings_Auto = true;
+			ConROCharacter.ConRO_Settings_Single = false;
+			ConROCharacter.ConRO_Settings_AoE = false;
 		end)
 end
 
@@ -425,8 +448,8 @@ function ConRO:CreateFullButton()
 		tbutton:SetText("Full")
 		tbutton:SetNormalFontObject("GameFontHighlightSmall")
 
-		tbutton:SetScript("OnEnter", ETOnEnter)
-		tbutton:SetScript("OnLeave", ETOnLeave)
+		tbutton:SetScript("OnEnter", ConROTTOnEnter)
+		tbutton:SetScript("OnLeave", ConROTTOnLeave)
 
 	local ntex = tbutton:CreateTexture()
 		ntex:SetTexture("Interface\\AddOns\\ConRO\\images\\buttonUp")
@@ -462,6 +485,7 @@ function ConRO:CreateFullButton()
 			ConRO_BurstButton:Show();
 			ConROCharacter.ConRO_Settings_Full = false;
 			ConROCharacter.ConRO_Settings_Burst = true;
+			ConROCharacter.ConRO_Settings_PvP = false;
 
 			if ConRO.rotationEnabled then
 				if ConRO.fetchTimer then
@@ -498,8 +522,82 @@ function ConRO:CreateBurstButton()
 		tbutton:SetText("Burst")
 		tbutton:SetNormalFontObject("GameFontHighlightSmall")
 
-		tbutton:SetScript("OnEnter", ETOnEnter)
-		tbutton:SetScript("OnLeave", ETOnLeave)
+		tbutton:SetScript("OnEnter", ConROTTOnEnter)
+		tbutton:SetScript("OnLeave", ConROTTOnLeave)
+
+	local ntex = tbutton:CreateTexture()
+		ntex:SetTexture("Interface\\AddOns\\ConRO\\images\\buttonUp")
+		ntex:SetTexCoord(0, 0.625, 0, 0.6875)
+		ntex:SetVertexColor(Color.r, Color.g, Color.b, 1)
+		ntex:SetAllPoints()
+		tbutton:SetNormalTexture(ntex)
+
+	local htex = tbutton:CreateTexture()
+		htex:SetTexture("Interface\\AddOns\\ConRO\\images\\buttonHighlight")
+		htex:SetTexCoord(0, 0.625, 0, 0.6875)
+		htex:SetAllPoints()
+		tbutton:SetHighlightTexture(htex)
+
+	local ptex = tbutton:CreateTexture()
+		ptex:SetTexture("Interface\\AddOns\\ConRO\\images\\buttonDown")
+		ptex:SetTexCoord(0, 0.625, 0, 0.6875)
+		ptex:SetVertexColor(Color.r, Color.g, Color.b, 1)
+		ptex:SetAllPoints()
+		tbutton:SetPushedTexture(ptex)
+
+		tbutton:SetScript("OnMouseDown", function (self, tbutton, up)
+			if ConRO.db.profile._Unlock_ConRO then
+				ConROButtonFrame:StartMoving();
+			end
+		end)
+
+		tbutton:SetScript("OnMouseUp", function (self, tbutton, up)
+			if ConRO.db.profile._Unlock_ConRO then
+				ConROButtonFrame:StopMovingOrSizing();
+			end
+			self:Hide();
+			ConRO_PvPButton:Show();
+			ConROCharacter.ConRO_Settings_Burst = false;
+			ConROCharacter.ConRO_Settings_Full = false;
+			ConROCharacter.ConRO_Settings_PvP = true;
+
+			if ConRO.rotationEnabled then
+				if ConRO.fetchTimer then
+					ConRO:CancelTimer(ConRO.fetchTimer);
+					ConRO:CancelTimer(ConRO.fetchdefTimer);
+				end
+				ConRO.fetchTimer = ConRO:ScheduleTimer('Fetch', 0.5);
+				ConRO.fetchdefTimer = ConRO:ScheduleTimer('FetchDef', 0.5);
+			end
+			ConRO:DestroyInterruptOverlays();
+			ConRO:DestroyCoolDownOverlays();
+			ConRO:DestroyPurgableOverlays();
+			ConRO:DestroyRaidBuffsOverlays();
+			ConRO:DestroyMovementOverlays();
+			ConRO:DestroyTauntOverlays();
+		end)
+end
+
+function ConRO:CreatePvPButton()
+	local _, Class = UnitClass("player")
+	local Color = RAID_CLASS_COLORS[Class]
+	local tbutton = CreateFrame("Button", 'ConRO_PvPButton', ConROButtonFrame)
+		tbutton:SetFrameStrata('MEDIUM');
+		tbutton:SetFrameLevel('74')
+		tbutton:SetPoint("TOPLEFT", "ConROButtonFrame", "TOPLEFT", 7, -7)
+		tbutton:SetSize(40, 15)
+		tbutton:SetAlpha(1)
+			if ConROCharacter.ConRO_Settings_PvP then
+				tbutton:Show()
+			else
+				tbutton:Hide()
+			end
+
+		tbutton:SetText("PvP")
+		tbutton:SetNormalFontObject("GameFontHighlightSmall")
+
+		tbutton:SetScript("OnEnter", ConROTTOnEnter)
+		tbutton:SetScript("OnLeave", ConROTTOnLeave)
 
 	local ntex = tbutton:CreateTexture()
 		ntex:SetTexture("Interface\\AddOns\\ConRO\\images\\buttonUp")
@@ -534,6 +632,7 @@ function ConRO:CreateBurstButton()
 			self:Hide();
 			ConRO_FullButton:Show();
 			ConROCharacter.ConRO_Settings_Burst = false;
+			ConROCharacter.ConRO_Settings_PvP = false;
 			ConROCharacter.ConRO_Settings_Full = true;
 
 			if ConRO.rotationEnabled then
@@ -565,8 +664,8 @@ function ConRO:CreateBlockBurstButton()
 		tbutton:SetText("Just")
 		tbutton:SetNormalFontObject("GameFontHighlightSmall")
 
-		tbutton:SetScript("OnEnter", ETOnEnter)
-		tbutton:SetScript("OnLeave", ETOnLeave)
+		tbutton:SetScript("OnEnter", ConROTTOnEnter)
+		tbutton:SetScript("OnLeave", ConROTTOnLeave)
 
 	local ntex = tbutton:CreateTexture()
 		ntex:SetTexture("Interface\\AddOns\\ConRO\\images\\buttonUp")
@@ -600,8 +699,8 @@ function ConRO:CreateBlockAoEButton()
 		tbutton:SetText("Kill")
 		tbutton:SetNormalFontObject("GameFontHighlightSmall")
 
-		tbutton:SetScript("OnEnter", TTOnEnter)
-		tbutton:SetScript("OnLeave", TTOnLeave)
+		tbutton:SetScript("OnEnter", ConROTTOnEnter)
+		tbutton:SetScript("OnLeave", ConROTTOnLeave)
 
 	local ntex = tbutton:CreateTexture()
 		ntex:SetTexture("Interface\\AddOns\\ConRO\\images\\buttonUp")
@@ -623,12 +722,23 @@ function ConRO:CreateBlockAoEButton()
 		end)
 end
 
+function ConRO:UpdateLockTexture()
+    local lockButton = ConRO_LockButton
+    if ConRO.db.profile._Unlock_ConRO then
+    	lockButton.lockTexture:SetTexture("Interface\\AddOns\\ConRO\\images\\padlock_open")
+    else
+    	lockButton.lockTexture:SetTexture("Interface\\AddOns\\ConRO\\images\\padlock_closed")
+    end
+
+end
+
 function ConRO:SlashUnlock()
 	if not ConRO.db.profile._Unlock_ConRO then
 		ConRO.db.profile._Unlock_ConRO = true;
 	else
 		ConRO.db.profile._Unlock_ConRO = false;
 	end
+	ConRO:UpdateLockTexture();
 
 	ConROWindow:EnableMouse(ConRO.db.profile._Unlock_ConRO);
 	ConRODefenseWindow:EnableMouse(ConRO.db.profile._Unlock_ConRO);
@@ -649,60 +759,73 @@ function ConRO:SlashUnlock()
 end
 
 function ConRO:SlashToggle()
-	if ConRO:MeleeSpec() then
-		if ConRO_AutoButton:IsVisible() then
-			ConRO_AutoButton:Hide();
-			ConRO_SingleButton:Show();
-			ConROCharacter.ConRO_Settings_Auto = false;
-			ConROCharacter.ConRO_Settings_Single = true;
-		elseif ConRO_SingleButton:IsVisible() then
-			ConRO_SingleButton:Hide();
-			ConRO_AoEButton:Show();
-			ConROCharacter.ConRO_Settings_Single = false;
-			ConROCharacter.ConRO_Settings_AoE = true;
-		elseif ConRO_AoEButton:IsVisible() then
-			ConRO_AoEButton:Hide();
-			ConRO_AutoButton:Show();
-			ConROCharacter.ConRO_Settings_AoE = false;
-			ConROCharacter.ConRO_Settings_Auto = true;
-		end
-	else
-		if ConRO_SingleButton:IsVisible() then
-			ConRO_SingleButton:Hide();
-			ConRO_AoEButton:Show();
-			ConROCharacter.ConRO_Settings_Single = false;
-			ConROCharacter.ConRO_Settings_AoE = true;
-		elseif ConRO_AoEButton:IsVisible() then
-			ConRO_AoEButton:Hide();
-			ConRO_SingleButton:Show();
-			ConROCharacter.ConRO_Settings_AoE = false;
-			ConROCharacter.ConRO_Settings_Single = true;
-		end
+	if ConRO_AutoButton:IsVisible() then
+		ConRO_AutoButton:Hide();
+		ConRO_SingleButton:Show();
+		ConROCharacter.ConRO_Settings_Auto = false;
+		ConROCharacter.ConRO_Settings_Single = true;
+	elseif ConRO_SingleButton:IsVisible() then
+		ConRO_SingleButton:Hide();
+		ConRO_AoEButton:Show();
+		ConROCharacter.ConRO_Settings_Single = false;
+		ConROCharacter.ConRO_Settings_AoE = true;
+	elseif ConRO_AoEButton:IsVisible() then
+		ConRO_AoEButton:Hide();
+		ConRO_AutoButton:Show();
+		ConROCharacter.ConRO_Settings_AoE = false;
+		ConROCharacter.ConRO_Settings_Auto = true;
 	end
 end
 
 function ConRO:SlashBurstToggle()
 	if ConRO_BurstButton:IsVisible() then
 		ConRO_BurstButton:Hide();
-		ConRO_FullButton:Show();
+		ConRO_PvPButton:Show();
 		ConROCharacter.ConRO_Settings_Burst = false;
-		ConROCharacter.ConRO_Settings_Full = true;
+		ConROCharacter.ConRO_Settings_PvP = true;
 	elseif ConRO_FullButton:IsVisible() then
 		ConRO_FullButton:Hide();
 		ConRO_BurstButton:Show();
 		ConROCharacter.ConRO_Settings_Full = false;
 		ConROCharacter.ConRO_Settings_Burst = true;
+	elseif ConRO_PvPButton:IsVisible() then
+		ConRO_PvPButton:Hide();
+		ConRO_FullButton:Show();
+		ConROCharacter.ConRO_Settings_PvP = false;
+		ConROCharacter.ConRO_Settings_Full = true;
+	end
+end
+
+function ConRO:SlashPvPToggle()
+	if ConRO_BurstButton:IsVisible() then
+		ConRO_BurstButton:Hide();
+		ConRO_PvPButton:Show();
+		ConROCharacter.ConRO_Settings_Burst = false;
+		ConROCharacter.ConRO_Settings_PvP = true;
+	elseif ConRO_FullButton:IsVisible() then
+		ConRO_FullButton:Hide();
+		ConRO_PvPButton:Show();
+		ConROCharacter.ConRO_Settings_Full = false;
+		ConROCharacter.ConRO_Settings_PvP = true;
+	elseif ConRO_PvPButton:IsVisible() then
+		ConRO_PvPButton:Hide();
+		ConRO_BurstButton:Show();
+		ConROCharacter.ConRO_Settings_PvP = false;
+		ConROCharacter.ConRO_Settings_Burst = true;
 	end
 end
 
 SLASH_CONRO1 = '/ConRO'
-SLASH_CONROUNLOCK1 = '/ConROlock'
+SLASH_CONROUNLOCK1 = '/ConROUL'
+SLASH_CONROUNLOCK2 = '/ConROlock'
 SLASH_CONROA1 = '/ConROtoggle'
 SLASH_CONROB1 = '/ConROBurstToggle'
-SlashCmdList["CONRO"] = function() InterfaceOptionsFrame_OpenToCategory('ConRO'); InterfaceOptionsFrame_OpenToCategory('ConRO'); end
+SLASH_CONROP1 = '/ConROPvPToggle'
+SlashCmdList["CONRO"] = function() Settings.OpenToCategory('ConRO'); end
 SlashCmdList["CONROUNLOCK"] = function() ConRO:SlashUnlock() end
 SlashCmdList["CONROA"] = function() ConRO:SlashToggle() end -- Slash Command List
 SlashCmdList["CONROB"] = function() ConRO:SlashBurstToggle() end -- Slash Command List
+SlashCmdList["CONROP"] = function() ConRO:SlashPvPToggle() end -- Slash Command List
 
 function ConRO:ToggleHealer()
 	ConROButtonFrame:Hide();
@@ -711,6 +834,7 @@ function ConRO:ToggleHealer()
 	ConRO_AoEButton:Hide();
 	ConRO_BurstButton:Hide();
 	ConRO_FullButton:Hide();
+	ConRO_PvPButton:Hide();
 	ConRO_BlockBurstButton:Hide();
 	ConRO_BlockAoEButton:Hide();
 end
@@ -733,9 +857,15 @@ function ConRO:ToggleDamage()
 	if ConROCharacter.ConRO_Settings_Full then
 		ConRO_FullButton:Show();
 		ConRO_BurstButton:Hide();
+		ConRO_PvPButton:Hide();
 	elseif ConROCharacter.ConRO_Settings_Burst then
 		ConRO_FullButton:Hide();
 		ConRO_BurstButton:Show();
+		ConRO_PvPButton:Hide();
+	elseif ConROCharacter.ConRO_Settings_PvP then
+		ConRO_FullButton:Hide();
+		ConRO_BurstButton:Hide();
+		ConRO_PvPButton:Show();
 	end
 	ConRO_BlockBurstButton:Hide();
 	ConRO_BlockAoEButton:Hide();
@@ -751,6 +881,7 @@ function ConRO:EnableSpecialization()  --WIP
 end
 
 function ConRO:BlockBurst()
+	ConRO_PvPButton:Hide();
 	ConRO_BurstButton:Hide();
 	ConRO_FullButton:Hide();
 	ConRO_BlockBurstButton:Show();
@@ -768,8 +899,8 @@ function ConRO:DisplayWindowFrame()
 		frame:SetMovable(true);
 		frame:SetClampedToScreen(true);
 		frame:RegisterForDrag("LeftButton");
-		frame:SetScript("OnEnter", TWOnEnter);
-		frame:SetScript("OnLeave", TWOnLeave);
+		frame:SetScript("OnEnter", ConROTTOnEnter);
+		frame:SetScript("OnLeave", ConROTTOnLeave);
 		frame:SetScript("OnDragStart", function(self)
 			if ConRO.db.profile._Unlock_ConRO then
 				frame:StartMoving()
@@ -824,7 +955,8 @@ function ConRO:DisplayWindowFrame()
 		if not fontkey then
 			fontkey = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlight");
 			fontkey:SetText(" ");
-			fontkey:SetPoint('TOP', frame, 'BOTTOM', 0, -2);
+			fontkey:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', 3, -2);
+			fontkey:SetFont("Fonts\\FRIZQT__.TTF",11,"OUTLINE");
 			fontkey:SetTextColor(1, 1, 1, 1);
 			frame.fontkey = fontkey;
 		end
@@ -867,34 +999,74 @@ function ConRO:DisplayWindowFrame()
 				end
 			end)
 		end
-end
 
-function ConRO:DisplayNextWindowFrame()
-	local frame = CreateFrame("Frame", "ConRONextWindow", UIParent);
-		frame:SetMovable(false);
-		frame:SetClampedToScreen(true);
+	local frame2 = CreateFrame("Frame", "ConROWindow2", frame);
+		frame2:SetMovable(false);
+		frame2:SetClampedToScreen(true);
+		frame2:SetScript("OnEnter", ConROTTOnEnter);
+		frame2:SetScript("OnLeave", ConROTTOnLeave);
 
-		frame:SetPoint("BOTTOMRIGHT", "ConROWindow", "BOTTOMLEFT", -3, 0);
-		frame:SetSize(ConRO.db.profile.windowIconSize/1.35, ConRO.db.profile.windowIconSize/1.35);
-		frame:SetFrameStrata('MEDIUM');
-		frame:SetFrameLevel('73');
-		frame:SetAlpha(ConRO.db.profile.transparencyWindow);
-		if ConRO.db.profile.combatWindow or ConRO:HealSpec() then
-			frame:Hide();
-		elseif not ConRO.db.profile.enableWindow then
-			frame:Hide();
+		frame2:SetPoint("BOTTOMRIGHT", frame, "BOTTOMLEFT", -3, 0);
+		frame2:SetSize(ConRO.db.profile.windowIconSize/1.20, ConRO.db.profile.windowIconSize/1.20);
+
+	local t2 = frame2.texture;
+		if not t2 then
+			t2 = frame:CreateTexture("ARTWORK");
+			t2:SetTexture('Interface\\AddOns\\ConRO\\images\\Bigskull');
+			t2:SetBlendMode('BLEND');
+			frame2.texture = t2;
+		end
+
+		t2:SetAllPoints(frame2)
+
+	local fontkey2 = frame2.fontkey;
+		if not fontkey2 then
+			fontkey2 = frame2:CreateFontString(nil, "ARTWORK", "GameFontHighlight");
+			fontkey2:SetText(" ");
+			fontkey2:SetPoint('TOPRIGHT', frame2, 'TOPRIGHT', 3, -2);
+			fontkey2:SetFont("Fonts\\FRIZQT__.TTF",11,"OUTLINE");
+			fontkey2:SetTextColor(1, 1, 1, 1);
+			frame2.fontkey = fontkey2;
+		end
+		if ConRO.db.profile.enableWindowKeybinds or ConRO.db.profile._Unlock_ConRO then
+			fontkey2:Show();
 		else
-			frame:Show();
-		end
-	local t = frame.texture;
-		if not t then
-			t = frame:CreateTexture("ARTWORK");
-			t:SetTexture('Interface\\AddOns\\ConRO\\images\\Bigskull');
-			t:SetBlendMode('BLEND');
-			frame.texture = t;
+			fontkey2:Hide();
 		end
 
-		t:SetAllPoints(frame)
+	local frame3 = CreateFrame("Frame", "ConROWindow3", frame2);
+		frame3:SetMovable(false);
+		frame3:SetClampedToScreen(true);
+		frame3:SetScript("OnEnter", ConROTTOnEnter);
+		frame3:SetScript("OnLeave", ConROTTOnLeave);
+
+		frame3:SetPoint("BOTTOMRIGHT", frame2, "BOTTOMLEFT", -3, 0);
+		frame3:SetSize(ConRO.db.profile.windowIconSize/1.20, ConRO.db.profile.windowIconSize/1.20);
+
+	local t3 = frame3.texture;
+		if not t3 then
+			t3 = frame:CreateTexture("ARTWORK");
+			t3:SetTexture('Interface\\AddOns\\ConRO\\images\\Bigskull');
+			t3:SetBlendMode('BLEND');
+			frame3.texture = t3;
+		end
+
+		t3:SetAllPoints(frame3)
+
+	local fontkey3 = frame3.fontkey;
+		if not fontkey3 then
+			fontkey3 = frame3:CreateFontString(nil, "ARTWORK", "GameFontHighlight");
+			fontkey3:SetText(" ");
+			fontkey3:SetPoint('TOPRIGHT', frame3, 'TOPRIGHT', 3, -2);
+			fontkey3:SetFont("Fonts\\FRIZQT__.TTF",11,"OUTLINE");
+			fontkey3:SetTextColor(1, 1, 1, 1);
+			frame3.fontkey = fontkey3;
+		end
+		if ConRO.db.profile.enableWindowKeybinds or ConRO.db.profile._Unlock_ConRO then
+			fontkey3:Show();
+		else
+			fontkey3:Hide();
+		end
 end
 
 function ConRO:DefenseWindowFrame()
@@ -902,8 +1074,8 @@ function ConRO:DefenseWindowFrame()
 		frame:SetMovable(true);
 		frame:SetClampedToScreen(true);
 		frame:RegisterForDrag("LeftButton");
-		frame:SetScript("OnEnter", TDWOnEnter);
-		frame:SetScript("OnLeave", TDWOnLeave);
+		frame:SetScript("OnEnter", ConROTTOnEnter);
+		frame:SetScript("OnLeave", ConROTTOnLeave);
 		frame:SetScript("OnDragStart", function(self)
 			if ConRO.db.profile._Unlock_ConRO then
 				frame:StartMoving()
@@ -912,7 +1084,7 @@ function ConRO:DefenseWindowFrame()
 		frame:SetScript("OnDragStop", frame.StopMovingOrSizing);
 		frame:EnableMouse(ConRO.db.profile._Unlock_ConRO);
 
-		frame:SetPoint("CENTER", -280, 50);
+		frame:SetPoint("CENTER", -280, -50);
 		frame:SetSize(ConRO.db.profile.windowIconSize * .75, ConRO.db.profile.windowIconSize * .75);
 		frame:SetFrameStrata('MEDIUM');
 		frame:SetFrameLevel('73');
@@ -961,7 +1133,8 @@ function ConRO:DefenseWindowFrame()
 		if not fontkey then
 			fontkey = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlight");
 			fontkey:SetText(" ");
-			fontkey:SetPoint('TOP', frame, 'BOTTOM', 0, -2);
+			fontkey:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', 3, -2);
+			fontkey:SetFont("Fonts\\FRIZQT__.TTF",11,"OUTLINE");
 			fontkey:SetTextColor(1, 1, 1, 1);
 			frame.fontkey = fontkey;
 		end
@@ -1011,8 +1184,8 @@ function ConRO:InterruptWindowFrame()
 		frame:SetMovable(true);
 		frame:SetClampedToScreen(true);
 		frame:RegisterForDrag("LeftButton");
-		frame:SetScript("OnEnter", TIWOnEnter);
-		frame:SetScript("OnLeave", TIWOnLeave);
+		frame:SetScript("OnEnter", ConROTTOnEnter);
+		frame:SetScript("OnLeave", ConROTTOnLeave);
 		frame:SetScript("OnDragStart", function(self)
 			if ConRO.db.profile._Unlock_ConRO then
 				frame:StartMoving()
@@ -1049,8 +1222,8 @@ function ConRO:PurgeWindowFrame()
 		frame:SetMovable(true);
 		frame:SetClampedToScreen(true);
 		frame:RegisterForDrag("LeftButton");
-		frame:SetScript("OnEnter", TPWOnEnter);
-		frame:SetScript("OnLeave", TPWOnLeave);
+		frame:SetScript("OnEnter", ConROTTOnEnter);
+		frame:SetScript("OnLeave", ConROTTOnLeave);
 		frame:SetScript("OnDragStart", function(self)
 			if ConRO.db.profile._Unlock_ConRO then
 				frame:StartMoving()
@@ -1082,6 +1255,38 @@ function ConRO:PurgeWindowFrame()
 		t:SetAllPoints(frame)
 end
 
+local bindingSubs = {
+    { "CTRL%-", "C" },
+    { "ALT%-", "A" },
+    { "SHIFT%-", "S" },
+    { "STRG%-", "ST" },
+    { "%s+", "" },
+    { "NUMPAD", "N" },
+    { "PLUS", "+" },
+    { "MINUS", "-" },
+    { "MULTIPLY", "*" },
+    { "DIVIDE", "/" },
+    { "BUTTON", "M" },
+    { "MOUSEWHEELUP", "MwU" },
+    { "MOUSEWHEELDOWN", "MwD" },
+    { "MOUSEWHEEL", "Mw" },
+    { "DOWN", "Dn" },
+    { "UP", "Up" },
+    { "PAGE", "Pg" },
+    { "BACKSPACE", "BkSp" },
+    { "DECIMAL", "." },
+    { "CAPSLOCK", "CAPS" },
+}
+
+function ConRO:improvedGetBindingText(binding)
+    if not binding then return "" end
+
+    for i, rep in ipairs(bindingSubs) do
+        binding = binding:gsub( rep[1], rep[2] )
+    end
+
+    return binding
+end
 
 function ConRO:FindKeybinding(id)
 	local keybind;
@@ -2047,7 +2252,7 @@ function ConRO:AddStandardButton(button, hotkey)
         end
 
         if type == 'macro' then
-            local slot = button:GetAttribute('action');
+			local slot = button:GetAttribute('action');-- Thanks to Zaphon for this blizzard bug fix
             if not slot or slot == 0 then
                 slot = button:GetPagedID();
             end
@@ -2055,7 +2260,8 @@ function ConRO:AddStandardButton(button, hotkey)
                 slot = button:CalculateAction();
             end
 			local macroName = GetActionText(slot);
-			id = GetMacroIndexByName(macroName);
+			id = GetMacroIndexByName(macroName);--
+
             spellId = GetMacroSpell(id);
             if not spellId then
                 return;
@@ -2109,7 +2315,7 @@ function ConRO:DefAddStandardButton(button, hotkey)
         end
 
         if type == 'macro' then
-            local slot = button:GetAttribute('action');
+			local slot = button:GetAttribute('action');-- Thanks to Zaphon for this blizzard bug fix
             if not slot or slot == 0 then
                 slot = button:GetPagedID();
             end
@@ -2117,7 +2323,8 @@ function ConRO:DefAddStandardButton(button, hotkey)
                 slot = button:CalculateAction();
             end
 			local macroName = GetActionText(slot);
-			id = GetMacroIndexByName(macroName);
+			id = GetMacroIndexByName(macroName);--
+			
             spellId = GetMacroSpell(id);
             if not spellId then
                 return;
@@ -3007,15 +3214,4 @@ function ConRO:GlowClearDef()
 			self.DefGlowing[spellID] = 0;
 		end
 	end
-end
-
-local function TTOnEnter(self)
-  GameTooltip:SetOwner(self, "ConROButtonFrame")
-  GameTooltip:SetText("tooltipTitle")  -- This sets the top line of text, in gold.
-  GameTooltip:AddLine("This is the contents of my tooltip", 1, 1, 1)
-  GameTooltip:Show()
-end
-
-local function TTOnLeave(self)
-  GameTooltip:Hide()
 end
